@@ -12,3 +12,6 @@ I have also been running web server on same raspi (Lighttpd or apache) to run we
 Copy content in WEB folder to your web server root folder and change in index.html code  ( ws = new WebSocket("ws://YOUR.SERVER.IP:8888/ws") to match your server IP/name setup.
 
 I'm hobbyist and this project has been more like learning of python programming. My strategy has been Copy/Paste/Try/Fix. No garanti given. It works for me. Tested on 1.3 and 1.5 versions of SPE's. 
+
+
+![SPE_Remote_OH2GEK](SPE_Remote.png)
