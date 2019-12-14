@@ -15,3 +15,5 @@ I'm hobbyist and this project has been more like learning of python programming.
 
 
 ![SPE_Remote_OH2GEK](SPE_Remote.png)
+
+https://youtu.be/Ws39YBW737Q
