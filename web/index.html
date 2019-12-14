@@ -1,0 +1,283 @@
+<!doctype html>
+<html>
+  <head>
+    <title>SPE 1.5K-FA - Remote by OH2GEK</title>
+    <meta charset="utf-8" />
+    <style type="text/css">
+      body {
+        text-align: center;
+        min-width: 500px;
+	background-color: coral;
+      }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>   
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="justgage/raphael-2.1.4.min.js"></script>
+    <script src="justgage/justgage.js"></script>
+   
+    <script>
+    var g1, g2, g3, g4  ;
+    var spe_d;    
+	var module = angular.module('myApp', []);
+	module.controller('myCtrl', function($scope, $interval) {
+     window.onload = function(){
+       
+        var g1 = new JustGage({
+          id: "g1",
+          min: 0,
+          max: 3,
+          pointer: true,
+  	  valueFontColor: "snow",
+          pointerOptions: {
+          toplength: 2,
+          bottomlength: -12,
+          bottomwidth: 4,
+          color: '#DC143C'
+        },
+	  decimals: 2,
+	  gaugeWidthScale: 0.5,
+          label: "SWR"
+	  
+        });
+
+        var g2 = new JustGage({
+          id: "g2",
+          min: 0,
+          max: 35,
+          pointer: true,
+	  valueFontColor: "snow",
+          pointerOptions: {
+          toplength: 2,
+          bottomlength: -12,
+          bottomwidth: 4,
+          color: '#7FFF00'
+        },
+	  decimals: 1,
+  	  gaugeWidthScale: 0.5,
+          label: "Amp",
+	  counter: true
+        });
+
+
+	var g3 = new JustGage({
+          id: "g3",
+          min: 0,
+          max: 75,
+          pointer: true,
+	  valueFontColor: "snow",
+          pointerOptions: {
+          toplength: 2,
+          bottomlength: -12,
+          bottomwidth: 4,
+          color: '#BC8F8F'
+        },
+           gaugeWidthScale: 0.5,
+          label: "Temp",
+	  symbol:"°C",
+          counter: true
+        });
+
+	 var g4 = new JustGage({
+          id: "g4",
+          min: 0,
+          max: 60,
+          pointer: true,
+	  valueFontColor: "snow",
+          pointerOptions: {
+          toplength: 2,
+          bottomlength: -12,
+          bottomwidth: 4,
+          color: '#8e8e93'
+        },
+	  decimals: 1,
+          gaugeWidthScale: 0.5,
+          label: "V",
+          counter: true
+        });
+
+     
+      $(function(){
+	var ws;
+        var logger = function(msg){
+        var json_parsed = JSON.parse(msg);
+        spe_d = json_parsed;
+	var p_out_d = json_parsed["p_out"];
+        var oper_d = json_parsed["op_status"];
+	p_out_d_pros = Math.round((p_out_d * 100) / 1600);
+	g1.refresh(json_parsed["swr"]); //ATU SWR
+        g2.refresh(json_parsed["drain"]); //AMP
+        g3.refresh(json_parsed["pa_temp"]); //TEMP
+        g4.refresh(json_parsed["voltage"]); //TEMP
+	var gain = json_parsed["p_level"];
+
+  	if(spe_d.p_out == "0000"){spe_d.p_out="-------";p_out_d=0;}  
+	 $scope.status = spe_d;
+         if(gain == "H"){$scope.gain="HIGH"; }
+	 else if(gain == "M"){$scope.gain="MID"; }
+	 else if(gain == "L"){$scope.gain="LOW"; }
+	$("#oper_btn").removeClass("btn-warning");
+	$("#oper_btn").removeClass("btn-secondary"); 
+	if(oper_d == "Oper"){$scope.oper="Operate";$("#oper_btn").addClass("btn-warning"); }
+	else if(oper_d == "Stby"){$scope.oper="Standby"; $("#oper_btn").addClass("btn-secondary");  }
+        $scope.$apply();    
+
+
+	$("#tx_led").removeClass("bg-dark");
+	if(json_parsed["tx_status"] == "TX"){
+	$("#tx_led").addClass("bg-danger");
+	}
+	if(json_parsed["tx_status"] == "RX"){
+	$("#tx_led").addClass("bg-dark");
+	}
+
+	$("#display").html(p_out_d + "W").attr('aria-valuenow', p_out_d).attr("style", "width:" + p_out_d_pros + "%")
+        .removeClass("bg-success")
+        .removeClass("bg-info")
+        .removeClass("bg-warning")
+        .removeClass("bg-danger");	
+
+	if (p_out_d > 1505) {
+        $("#display").addClass("bg-danger");
+        } else if (p_out_d > 1400) {
+        $("#display").addClass("bg-warning");
+        } else if (p_out_d > 100) {
+        $("#display").addClass("bg-info");
+        } else {
+        $("#display").addClass("bg-success");
+               }
+
+	}
+
+        var sender = function(msg) {          
+            ws.send(msg);
+        }
+       // This is IP of your Raspi server. Change it to match your setup.
+       ws = new WebSocket("ws://YOUR.SERVER.IP:8888/ws");	
+	
+       ws.onmessage = function(evt) {
+          logger(evt.data);   
+        };
+	
+        ws.onclose = function(evt) { 
+          console.log("Websocket Close.");
+        };
+       
+ 	 ws.onopen = function(evt) { 
+	    console.log("Websocket Open.");
+	 };
+
+	 $("#oper_btn").click(function(){
+          sender("oper");
+        });
+	 $("#gain_btn").click(function(){
+          sender("gain");
+        });
+	 $("#antenna_btn").click(function(){
+          sender("antenna");
+        });
+	 $("#tune_btn").click(function(){
+          sender("tune");
+        });
+	 $("#input_btn").click(function(){
+          sender("input");
+        });
+
+      });  
+   };
+});
+
+
+
+    </script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<link href="css/app.css" rel="stylesheet">
+</head>
+<body>
+<body style="background-color:black;">
+<div ng-app="myApp" ng-controller="myCtrl">
+   <div class="wrapper"> 
+			<div class="box_3"><p class="font-weight-bold" style="color:linen"> OUT  :  {{status.p_out}}</div>
+			<div class="box_5">
+			<p class="font-weight-bold" style="color:linen">W</p></div>
+		        <div class="box_6">
+                        <p class="font-weight-bold" style="color:tomato">{{status.error}} {{status.warnings}}</p></div>
+  		 	 <div class="box_7">
+                        <p class="font-weight-bold" style="color:linen">SWR ANT:{{status.aswr}}</p></div>
+			 <div class="box_4">
+                         <div class="progress" style="height: 20px;">
+			 <div class="bar-step" style="left: 1%">
+			 <div class="label-txt">50</div>
+			 <div class="label-percent">W</div><div class="label-line"></div></div>
+						
+			 <div class="bar-step" style="left: 13%">
+                         <div class="label-txt">250</div>
+                         <div class="label-percent">W</div><div class="label-line"></div></div>
+		         
+			 <div class="bar-step" style="left: 27%">
+                         <div class="label-txt">500</div>
+                         <div class="label-percent">W</div><div class="label-line"></div></div>
+					
+			 <div class="bar-step" style="left: 43%">
+                         <div class="label-txt">750</div>
+                         <div class="label-percent">W</div><div class="label-line"></div></div>
+			
+			 <div class="bar-step" style="left: 60%">
+                         <div class="label-txt">1.0</div>
+                         <div class="label-percent">kW</div><div class="label-line"></div></div>
+			
+			 <div class="bar-step" style="left: 77%">
+                         <div class="label-txt">1.3</div>
+                         <div class="label-percent">kW</div><div class="label-line"></div></div>
+
+			 <div class="bar-step" style="left: 90%">
+                         <div class="label-txt">1.5</div>
+                         <div class="label-percent">kW</div><div class="label-line"></div></div>	
+				
+    			 <div class="progress-bar"
+                             id="display"
+                             role="progressbar"
+                             aria-valuenow="0"
+                             aria-valuemin="0"
+                             aria-valuemax="1500"
+                             style="width: 0%;">
+                         </div>
+			 </div>
+                         </div>
+	                <div class="box">
+			<div id="g1" class="gauge"></div>
+		        </div>
+			<div class="box">   			
+                        <div id="g2" class="gauge"></div>
+		        </div>
+			<div class="box">
+	         	<div id="g3" class="gauge"></div>
+		     	</div>
+			<div class="box">
+                        <div id="g4" class="gauge"></div>
+                        </div>
+			<div class="box_2">
+			<div class="ce">
+			<div class="d-inline p-1 bg-dark text-white" id="tx_led">{{status.tx_status}}</div>
+			<div class="d-inline p-1 bg-dark text-white" >BAND: {{status.band}}</div>
+			<div class="d-inline p-1 bg-dark text-white">ANT:{{status.tx_antenna}}</div>
+			<div class="d-inline p-1 bg-dark text-white">IN:{{status.input}}</div>
+        		</div>
+                        </div>
+
+			
+			<div class="container">	
+			<div class="btn-group" role="group" aria-label="Basic example">
+  <button type="button" class="btn btn-secondary" id="oper_btn">{{oper}}</button>
+  <button type="button" class="btn btn-secondary" id="gain_btn">{{gain}}</button> 
+  <button type="button" class="btn btn-secondary" id="antenna_btn">ANT</button>
+  <button type="button" class="btn btn-secondary" id="tune_btn">TUNE</button>
+  <button type="button" class="btn btn-secondary" id="input_btn">INPUT</button>
+
+
+
+</div>			
+</div>		
+</div>  
+</div>
+</body>
+</html>
